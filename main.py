@@ -9,8 +9,9 @@ para = dict()
 a = 1  # major axis a of ellipsoid
 b = 0.5  # minor axis a of ellipsoid
 m = 1.0  # mass of bacteria
+d = 0.01
 
-para['m'] = 1.0; para['a'] = a; para['b'] = b
+para['m'] = 1.0; para['a'] = a; para['b'] = b; para['d'] = d
 
 # Initial conditions
 x0 = [0, np.pi/2, 1, 2]  # phi, theta, dphi, dtheta

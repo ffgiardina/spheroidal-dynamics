@@ -5,12 +5,19 @@ import matplotlib.pyplot as plt
 def dynamics(x, t, para):
     # unpack states and parameters
     phi, theta, dphi, dtheta = x
-    a, b, m = [para[i] for i in ['a', 'b', 'm']]
+    a, b, m, d = [para[i] for i in ['a', 'b', 'm', 'd']]
+
+    # metric tensor
+    g = np.matrix([[(a*np.sin(theta))**2, 0], [0, 1.0/2.0*(a**2+b**2+(a**2-b**2)*np.cos(2*theta))]])
+
+    # compute damping forces
+    v = np.matrix([[dphi], [dtheta]])
+    f_d = -d*np.dot(g,v)
 
     # compute time derivatives
-    f = 0
-    ddphi = f/((a*np.sin(theta))**2) - 2*np.cos(theta)/np.sin(theta)*dtheta*dphi
-    ddtheta = (2*f + (a**2-b**2)*np.sin(2*theta)*dtheta**2 + a**2*np.sin(2*theta)*dphi**2) /\
+    f = f_d
+    ddphi = f[0]/((a*np.sin(theta))**2) - 2*np.cos(theta)/np.sin(theta)*dtheta*dphi
+    ddtheta = (2*f[1] + (a**2-b**2)*np.sin(2*theta)*dtheta**2 + a**2*np.sin(2*theta)*dphi**2) /\
               (a**2 + b**2 + (a**2-b**2)*np.cos(2*theta))
     dxdt = [dphi, dtheta, ddphi, ddtheta]
     return dxdt
