@@ -9,12 +9,13 @@ para = dict()
 a = 1  # major axis a of ellipsoid
 b = 0.5  # minor axis a of ellipsoid
 m = 1.0  # mass of bacteria
-d = 0.01
+d = 0.1  # damping coefficient
+p = 0.05  # propulsive force
 
-para['m'] = 1.0; para['a'] = a; para['b'] = b; para['d'] = d
+para['m'] = 1.0; para['a'] = a; para['b'] = b; para['d'] = d; para['p'] = p
 
 # Initial conditions
-x0 = [0, np.pi/2, 1, 2]  # phi, theta, dphi, dtheta
+x0 = [0, np.pi/2, 0.1, 0.1]  # phi, theta, dphi, dtheta
 
 # Solve problem
 tend = 100  # final time
@@ -24,6 +25,9 @@ sol = odeint(dynamics, x0, t, args=(para,))
 
 # Convert solution to cartesian coordinates
 r = ellipsoid2cartesian(sol, para)
+
+#dr = (r[2:,:] - r[1:-1,:])/(tend/N)
+#v = np.sqrt(np.sum(dr*dr,axis=1))
 
 # Animate results
 fig = plt.figure(1)

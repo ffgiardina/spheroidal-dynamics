@@ -5,17 +5,28 @@ import matplotlib.pyplot as plt
 def dynamics(x, t, para):
     # unpack states and parameters
     phi, theta, dphi, dtheta = x
-    a, b, m, d = [para[i] for i in ['a', 'b', 'm', 'd']]
+    a, b, m, d, p = [para[i] for i in ['a', 'b', 'm', 'd', 'p']]
+
+    # Jacobian matrix
+    J = np.matrix([[-a * np.sin(theta) * np.sin(phi), a * np.cos(theta) * np.cos(phi)],
+                   [a * np.cos(phi) * np.sin(theta), a * np.cos(theta) * np.sin(phi)],
+                   [0, -b * np.sin(theta)]])
 
     # metric tensor
     g = np.matrix([[(a*np.sin(theta))**2, 0], [0, 1.0/2.0*(a**2+b**2+(a**2-b**2)*np.cos(2*theta))]])
+    v = np.matrix([[dphi], [dtheta]])  # velocity vector
 
     # compute damping forces
-    v = np.matrix([[dphi], [dtheta]])
     f_d = -d*np.dot(g,v)
 
+    # compute propulsive forces
+    dr = np.dot(J,v)
+    f_p = p * np.dot(J.T,dr)/(np.linalg.norm(dr)+1e-20)
+
     # compute time derivatives
-    f = f_d
+    f = f_p + f_d
+
+
     ddphi = f[0]/((a*np.sin(theta))**2) - 2*np.cos(theta)/np.sin(theta)*dtheta*dphi
     ddtheta = (2*f[1] + (a**2-b**2)*np.sin(2*theta)*dtheta**2 + a**2*np.sin(2*theta)*dphi**2) /\
               (a**2 + b**2 + (a**2-b**2)*np.cos(2*theta))
@@ -37,6 +48,7 @@ def ellipsoid2cartesian(sol, para):
     r[:, 1] = L * s * np.sin(phi)
     r[:, 2] = L * c
     return r
+
 
 # Functions from @Mateen Ulhaq and @karlo
 def set_axes_equal(ax: plt.Axes):
