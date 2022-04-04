@@ -4,49 +4,51 @@ import matplotlib.pyplot as plt
 #  Equations of motion
 def dynamics(x, t, para):
     # unpack states and parameters
-    phi, theta, dphi, dtheta = x
-    a, b, m, d, p = [para[i] for i in ['a', 'b', 'm', 'd', 'p']]
+    n, a, b, m, d, p = [para[i] for i in ['n', 'a', 'b', 'm', 'd', 'p']]
+    phi, theta, dphi, dtheta = [x[i*n:(i+1)*n] for i in range(4)]
+
 
     # Jacobian matrix
-    J = np.matrix([[-a * np.sin(theta) * np.sin(phi), a * np.cos(theta) * np.cos(phi)],
+    J = np.array([[-a * np.sin(theta) * np.sin(phi), a * np.cos(theta) * np.cos(phi)],
                    [a * np.cos(phi) * np.sin(theta), a * np.cos(theta) * np.sin(phi)],
-                   [0, -b * np.sin(theta)]])
+                   [np.zeros(n), -b * np.sin(theta)]]).transpose((2,0,1))
 
     # metric tensor
-    g = np.matrix([[(a*np.sin(theta))**2, 0], [0, 1.0/2.0*(a**2+b**2+(a**2-b**2)*np.cos(2*theta))]])
-    v = np.matrix([[dphi], [dtheta]])  # velocity vector
+    g = np.array([[(a*np.sin(theta))**2, np.zeros(n)], [np.zeros(n), 1.0/2.0*(a**2+b**2+(a**2-b**2)*np.cos(2*theta))]]).transpose((2,0,1))
+    v = np.array([[dphi], [dtheta]]).transpose((2,0,1))  # velocity vector
 
     # compute damping forces
-    f_d = -d*np.dot(g,v)
+    f_d = -d*(g@v)
 
     # compute propulsive forces
-    dr = np.dot(J,v)
-    f_p = p * np.dot(J.T,dr)/(np.linalg.norm(dr)+1e-20)
+    dr = J@v
+    dr_norm = np.sqrt(np.sum(dr*dr,axis=1)).repeat(2,axis=1).reshape((n,2,1))
+    f_p = p * (J.transpose((0,2,1))@dr)/(dr_norm+1e-16)
 
     # compute time derivatives
     f = f_p + f_d
 
-
-    ddphi = f[0]/((a*np.sin(theta))**2) - 2*np.cos(theta)/np.sin(theta)*dtheta*dphi
-    ddtheta = (2*f[1] + (a**2-b**2)*np.sin(2*theta)*dtheta**2 + a**2*np.sin(2*theta)*dphi**2) /\
+    ddphi = f[:,0,:].T/((a*np.sin(theta))**2) - 2*np.cos(theta)/np.sin(theta)*dtheta*dphi
+    ddtheta = (2*f[:,1,:].T + (a**2-b**2)*np.sin(2*theta)*dtheta**2 + a**2*np.sin(2*theta)*dphi**2) /\
               (a**2 + b**2 + (a**2-b**2)*np.cos(2*theta))
-    dxdt = [dphi, dtheta, ddphi, ddtheta]
+
+    dxdt = np.concatenate((dphi, dtheta, ddphi.flatten(), ddtheta.flatten()), axis=0)
     return dxdt
 
 
 # Convert ellipsoidal coordinate solution to Cartesian coordinates
 def ellipsoid2cartesian(sol, para):
-    phi, theta, _, _ = [sol[:,i] for i in range(sol.shape[1])]
-    a, b = [para[i] for i in ['a', 'b']]
+    n, a, b = [para[i] for i in ['n', 'a', 'b']]
+    phi, theta, _, _ = [sol[:, i * n:(i + 1) * n] for i in range(4)]
     N = sol.shape[0]
-    r = np.zeros((N,3))
+    r = np.zeros((N, n, 3))
 
     s = a * np.sin(theta) / np.sqrt((a * np.sin(theta)) ** 2 + (b * np.cos(theta)) ** 2)
     c = b * np.cos(theta) / np.sqrt((a * np.sin(theta)) ** 2 + (b * np.cos(theta)) ** 2)
     L = a * b / np.sqrt((a * c) ** 2 + (b * s) ** 2)
-    r[:, 0] = L * s * np.cos(phi)
-    r[:, 1] = L * s * np.sin(phi)
-    r[:, 2] = L * c
+    r[:,:,0] = L * s * np.cos(phi)
+    r[:,:,1] = L * s * np.sin(phi)
+    r[:,:,2] = L * c
     return r
 
 

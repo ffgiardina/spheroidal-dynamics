@@ -3,19 +3,26 @@ from matplotlib.animation import FuncAnimation
 from matplotlib import cm
 from scipy.integrate import odeint
 from subroutines import *
+import random
 
 # Parameters
 para = dict()
+n = 10  # number of bacteria
 a = 1  # major axis a of ellipsoid
 b = 0.5  # minor axis a of ellipsoid
 m = 1.0  # mass of bacteria
 d = 0.1  # damping coefficient
 p = 0.05  # propulsive force
 
-para['m'] = 1.0; para['a'] = a; para['b'] = b; para['d'] = d; para['p'] = p
+para['n'] = n; para['m'] = 1.0; para['a'] = a; para['b'] = b; para['d'] = d; para['p'] = p
 
 # Initial conditions
-x0 = [0, np.pi/2, 0.1, 0.1]  # phi, theta, dphi, dtheta
+random.seed(1)
+phi0 = np.random.rand(n)*np.pi-np.pi/2
+theta0 = np.random.rand(n)*np.pi
+dphi0 = np.random.rand(n)-1/2
+dtheta0 = np.random.rand(n)-1/2
+x0 = np.concatenate((phi0, theta0, dphi0, dtheta0), axis=0)
 
 # Solve problem
 tend = 100  # final time
@@ -26,8 +33,9 @@ sol = odeint(dynamics, x0, t, args=(para,))
 # Convert solution to cartesian coordinates
 r = ellipsoid2cartesian(sol, para)
 
-#dr = (r[2:,:] - r[1:-1,:])/(tend/N)
-#v = np.sqrt(np.sum(dr*dr,axis=1))
+# Compute particle velocities
+# dr = (r[2:,:,:] - r[1:-1,:,:])/(tend/N)
+# v = np.sqrt(np.sum(dr*dr,axis=2))
 
 # Animate results
 fig = plt.figure(1)
@@ -43,22 +51,22 @@ ax.plot_surface(x, y, z, cmap=cm.Spectral, alpha=0.5, cstride=1, rstride=1, line
 ax.set_box_aspect([1, 1, 1])
 set_axes_equal(ax)
 
-points, = ax.plot(r[0, 0], r[0, 1], r[0, 2], marker="o", c='black')
-line, = ax.plot(r[0, 0], r[0, 1], r[0, 2], c='black')
+points, = ax.plot(r[0, :, 0], r[0, :,  1], r[0, :,  2], marker="o", c='black', linestyle = 'None',)
+line, = ax.plot(r[0, 1, 0], r[0, 1, 1], r[0, 1, 2], c='black', linewidth=0.2)
 
 # Updating function, to be repeatedly called by the animation
 def update(it):
     # obtain point coordinates
-    r0 = r[it,:]
+    r0 = r[it,:,:]
     # set point's coordinates
-    points.set_data([r0[0]],[r0[1]])
-    points.set_3d_properties([r0[2]], 'z')
+    points.set_data(r0[:, 0],r0[:, 1])
+    points.set_3d_properties(r0[:, 2],'z')
 
     # Rotate plot
     ax.view_init(azim=it/N*5*360)
 
-    line.set_data(r[0:it,0],r[0:it,1])
-    line.set_3d_properties(r[0:it,2], 'z')
+    line.set_data(r[0:it,0,0],r[0:it,0,1])
+    line.set_3d_properties(r[0:it,0,2], 'z')
 
     #return points, line
     return points, line, ax
@@ -67,7 +75,6 @@ repspeed = 20
 anim = FuncAnimation(fig, update, interval=1000.0*tend/N/repspeed, blit=False, repeat=False,
                     frames=N)
 
-#ax.plot(r[0:, 0],r[0:, 1],r[0:, 2], c='black')
 plt.show()
 
 #anim.save('dynamics.mp4', writer = 'ffmpeg', fps = 30)
