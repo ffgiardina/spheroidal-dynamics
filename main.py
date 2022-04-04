@@ -3,21 +3,23 @@ from matplotlib.animation import FuncAnimation
 from matplotlib import cm
 from scipy.integrate import odeint
 from subroutines import *
-import random
 
 # Parameters
 para = dict()
-n = 10  # number of bacteria
+n = 100  # number of bacteria
 a = 1  # major axis a of ellipsoid
 b = 0.5  # minor axis a of ellipsoid
 m = 1.0  # mass of bacteria
-d = 0.1  # damping coefficient
-p = 0.05  # propulsive force
+d = 0.5  # damping coefficient
+p = 0.1  # propulsive force
+r_b = 0.1  # particle radius
+f_r = lambda d: 0.01/d**2  # repulsive force function
 
 para['n'] = n; para['m'] = 1.0; para['a'] = a; para['b'] = b; para['d'] = d; para['p'] = p
+para['r_b'] = r_b; para['f_r'] = f_r
 
 # Initial conditions
-random.seed(1)
+np.random.seed(1)
 phi0 = np.random.rand(n)*np.pi-np.pi/2
 theta0 = np.random.rand(n)*np.pi
 dphi0 = np.random.rand(n)-1/2
@@ -63,7 +65,7 @@ def update(it):
     points.set_3d_properties(r0[:, 2],'z')
 
     # Rotate plot
-    ax.view_init(azim=it/N*5*360)
+    ax.view_init(elev=90, azim=it/N*0*360)
 
     line.set_data(r[0:it,0,0],r[0:it,0,1])
     line.set_3d_properties(r[0:it,0,2], 'z')
@@ -71,7 +73,7 @@ def update(it):
     #return points, line
     return points, line, ax
 
-repspeed = 20
+repspeed = 10
 anim = FuncAnimation(fig, update, interval=1000.0*tend/N/repspeed, blit=False, repeat=False,
                     frames=N)
 
