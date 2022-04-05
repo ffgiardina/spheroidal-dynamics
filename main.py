@@ -13,7 +13,7 @@ m = 1.0  # mass of bacteria
 d = 0.5  # damping coefficient
 p = 0.1  # propulsive force
 r_b = 0.1  # particle radius
-f_r = lambda d: 0.01/d**2  # repulsive force function
+f_r = lambda d: 0.02/d**2  # repulsive force function
 
 para['n'] = n; para['m'] = 1.0; para['a'] = a; para['b'] = b; para['d'] = d; para['p'] = p
 para['r_b'] = r_b; para['f_r'] = f_r
@@ -26,8 +26,10 @@ dphi0 = np.random.rand(n)-1/2
 dtheta0 = np.random.rand(n)-1/2
 x0 = np.concatenate((phi0, theta0, dphi0, dtheta0), axis=0)
 
+x0 = separate_all(x0, para)
+
 # Solve problem
-tend = 100  # final time
+tend = 20  # final time
 N = 1001  # number of solution time points
 t = np.linspace(0, tend, N)
 sol = odeint(dynamics, x0, t, args=(para,))
@@ -35,48 +37,15 @@ sol = odeint(dynamics, x0, t, args=(para,))
 # Convert solution to cartesian coordinates
 r = ellipsoid2cartesian(sol, para)
 
+# Save results
+p = para.copy(); del p['f_r']; p['N'] = N; p['tend'] = tend
+np.savez('results.npz', trajectories=r, parameters=p)
+
 # Compute particle velocities
 # dr = (r[2:,:,:] - r[1:-1,:,:])/(tend/N)
 # v = np.sqrt(np.sum(dr*dr,axis=2))
 
-# Animate results
-fig = plt.figure(1)
-ax = plt.axes(projection='3d')
-plt.axis('off')
+# Animation
+from animation import animate
+animate(video=False)
 
-u, v = np.mgrid[0:2*np.pi:60j, 0:np.pi:30j]
-x = a*np.cos(u)*np.sin(v)
-y = a*np.sin(u)*np.sin(v)
-z = b*np.cos(v)
-
-ax.plot_surface(x, y, z, cmap=cm.Spectral, alpha=0.5, cstride=1, rstride=1, linewidth=0, antialiased=True)
-ax.set_box_aspect([1, 1, 1])
-set_axes_equal(ax)
-
-points, = ax.plot(r[0, :, 0], r[0, :,  1], r[0, :,  2], marker="o", c='black', linestyle = 'None',)
-line, = ax.plot(r[0, 1, 0], r[0, 1, 1], r[0, 1, 2], c='black', linewidth=0.2)
-
-# Updating function, to be repeatedly called by the animation
-def update(it):
-    # obtain point coordinates
-    r0 = r[it,:,:]
-    # set point's coordinates
-    points.set_data(r0[:, 0],r0[:, 1])
-    points.set_3d_properties(r0[:, 2],'z')
-
-    # Rotate plot
-    ax.view_init(elev=90, azim=it/N*0*360)
-
-    line.set_data(r[0:it,0,0],r[0:it,0,1])
-    line.set_3d_properties(r[0:it,0,2], 'z')
-
-    #return points, line
-    return points, line, ax
-
-repspeed = 10
-anim = FuncAnimation(fig, update, interval=1000.0*tend/N/repspeed, blit=False, repeat=False,
-                    frames=N)
-
-plt.show()
-
-#anim.save('dynamics.mp4', writer = 'ffmpeg', fps = 30)

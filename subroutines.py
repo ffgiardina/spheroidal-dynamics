@@ -77,6 +77,29 @@ def ellipsoid2cartesian(sol, para):
     return r
 
 
+# Maximally separate particles on given ellipsoid
+def separate_all(x, para):
+    n, a, b = [para[i] for i in ['n', 'a', 'b']]
+    phi, theta, dphi, dtheta = [x[i*n:(i+1)*n] for i in range(4)]
+
+    p = para.copy()
+    p['f_r'] = lambda d: 1e-4/d**2
+
+    N = 1000
+    for i in range(N):
+        # Jacobian matrix
+        J = np.array([[-a * np.sin(theta) * np.sin(phi), a * np.cos(theta) * np.cos(phi)],
+                      [a * np.cos(phi) * np.sin(theta), a * np.cos(theta) * np.sin(phi)],
+                      [np.zeros(n), -b * np.sin(theta)]]).transpose((2, 0, 1))
+
+        # take a separation step
+        s = repulsion(x, p, J)
+        phi = (phi + s[:,0,:].T).flatten()
+        theta = (theta + s[:,1,:].T).flatten()
+        x = np.concatenate((phi, theta, dphi, dtheta), axis=0)
+
+    return x
+
 # Functions from @Mateen Ulhaq and @karlo
 def set_axes_equal(ax: plt.Axes):
     """Set 3D plot axes to equal scale.
