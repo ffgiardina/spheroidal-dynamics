@@ -1,26 +1,28 @@
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-from matplotlib import cm
 from scipy.integrate import odeint
 from subroutines import *
+from tqdm import tqdm
 
 # Parameters
 para = dict()
-n = 100  # number of bacteria
-a = 1  # major axis a of ellipsoid
-b = 0.5  # minor axis a of ellipsoid
-m = 1.0  # mass of bacteria
-d = 0.5  # damping coefficient
-p = 0.1  # propulsive force
-r_b = 0.1  # particle radius
-f_r = lambda d: 0.02/d**2  # repulsive force function
+n = 20  # number of bacteria
+a = 40e-6  # major axis a of ellipsoid
+b = a*0.95  # minor axis a of ellipsoid
+m = 1e-15  # mass of bacteria
+E = 3e5  # elastic modulus of bacteria
+r_b = 3e-6  # particle radius
+f_r = lambda d: np.sqrt(8/9*np.abs(d-2*r_b)**3*E**2*r_b)*(d-2*r_b<0)  # sphere-sphere Hertzian repulsion
+mu = 1e-3  # dynamic viscosity of water at room temperature
+v_b = 10e-6  # bacterial speed
+d = 6*np.pi*mu*r_b*v_b  # damping coefficient (Stoke's law)
+p = v_b*d  # propulsive force
 
-para['n'] = n; para['m'] = 1.0; para['a'] = a; para['b'] = b; para['d'] = d; para['p'] = p
+para['n'] = n; para['m'] = m; para['a'] = a; para['b'] = b; para['d'] = d; para['p'] = p
 para['r_b'] = r_b; para['f_r'] = f_r
 
 # Initial conditions
-np.random.seed(1)
-phi0 = np.random.rand(n)*np.pi-np.pi/2
+np.random.seed(2)
+phi0 = np.random.rand(n)*2*np.pi-np.pi
 theta0 = np.random.rand(n)*np.pi
 dphi0 = np.random.rand(n)-1/2
 dtheta0 = np.random.rand(n)-1/2
@@ -32,20 +34,35 @@ x0 = separate_all(x0, para)
 tend = 20  # final time
 N = 1001  # number of solution time points
 t = np.linspace(0, tend, N)
-sol = odeint(dynamics, x0, t, args=(para,))
+
+s_e = 4*np.pi*(((a*a)**1.6 + 2*(a*b)**1.6)/3)**(1/1.6)
+print(f'Running simulation at packing fraction {np.round(n*r_b**2*np.pi/s_e,2)}')
+with tqdm(total=100, unit="‰") as pbar:
+    sol = odeint(dynamics, x0, t, args=(para, pbar, [0, tend/100]))
 
 # Convert solution to cartesian coordinates
 r = ellipsoid2cartesian(sol, para)
 
 # Save results
-p = para.copy(); del p['f_r']; p['N'] = N; p['tend'] = tend
-np.savez('results.npz', trajectories=r, parameters=p)
+para_tmp = para.copy(); del para_tmp['f_r']; para_tmp['N'] = N; para_tmp['tend'] = tend
+np.savez('results.npz', trajectories=r, parameters=para_tmp)
 
-# Compute particle velocities
-# dr = (r[2:,:,:] - r[1:-1,:,:])/(tend/N)
-# v = np.sqrt(np.sum(dr*dr,axis=2))
+# Compute total spin of system along z-axis
+drdt = (r[1:,:,:] - r[:-1,:,:])/(tend/N)  # velocity vectors
+rot = np.zeros(N-1)
+ez = np.array([[0],[0],[1]])  # z-axis
+for i in range(N-1):
+    rot_all = np.array([r[i,:,1]*drdt[i,:,2] - r[i,:,2]*drdt[i,:,1],
+                        r[i,:,2]*drdt[i,:,0] - r[i,:,0]*drdt[i,:,2],
+                        r[i,:,0]*drdt[i,:,1] - r[i,:,1]*drdt[i,:,0]])
+    rot[i] = np.dot(ez.T,np.sum(rot_all,axis=1))
+
+plt.figure(0)
+plt.plot(rot)
+plt.xlabel('t')
+plt.ylabel('Total spin in z')
 
 # Animation
 from animation import animate
-animate(video=False)
+animate(False)
 

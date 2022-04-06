@@ -1,6 +1,7 @@
 from matplotlib.animation import FuncAnimation
 from matplotlib import cm
 from subroutines import *
+import math
 
 def animate(save_video=False):
     # Load data
@@ -27,8 +28,14 @@ def animate(save_video=False):
     ax.set_box_aspect([1, 1, 1])
     set_axes_equal(ax)
 
+    # points and lines to be updated
     points, = ax.plot(r[0, :, 0], r[0, :,  1], r[0, :,  2], marker="o", c='black', linestyle = 'None',)
     line, = ax.plot(r[0, 1, 0], r[0, 1, 1], r[0, 1, 2], c='black', linewidth=1)
+
+    # time
+    axtext = fig.add_axes([0.0, 0.95, 0.1, 0.05])
+    axtext.axis("off")
+    time = axtext.text(0.5, 0.5, str(0), ha="left", va="top")
 
     # Updating function, to be repeatedly called by the animation
     def update(it):
@@ -44,11 +51,13 @@ def animate(save_video=False):
         line.set_data(r[0:it,0,0],r[0:it,0,1])
         line.set_3d_properties(r[0:it,0,2], 'z')
 
+        time.set_text('t=' + str(np.round(tend*it/N,1)) + 's')
+
         #return points, line
-        return points, line, ax
+        return points, line, ax, time,
 
 
-    anim = FuncAnimation(fig, update, interval=1000.0*tend/N/replay_speed, blit=False, repeat=False,
+    anim = FuncAnimation(fig, update, interval=math.ceil(1000.0*tend/N/replay_speed), blit=False, repeat=False,
                         frames=N)
 
     plt.show()

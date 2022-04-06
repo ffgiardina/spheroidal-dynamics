@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 #  Equations of motion
-def dynamics(x, t, para):
+def dynamics(x, t, para, pbar, state):
     # unpack states and parameters
     n, a, b, m, d, p = [para[i] for i in ['n', 'a', 'b', 'm', 'd', 'p']]
     phi, theta, dphi, dtheta = [x[i*n:(i+1)*n] for i in range(4)]
@@ -23,7 +23,7 @@ def dynamics(x, t, para):
     # compute propulsive forces
     dr = J@v
     dr_norm = np.sqrt(np.sum(dr*dr,axis=1)).repeat(2,axis=1).reshape((n,2,1))
-    f_p = p * (J.transpose((0,2,1))@dr)/(dr_norm+1e-16)
+    f_p = p * (J.transpose((0,2,1))@dr)/(dr_norm+p*1e-10)
 
     # compute interaction forces
     f_i = repulsion(x, para, J)
@@ -31,11 +31,18 @@ def dynamics(x, t, para):
     # compute time derivatives
     f = f_p + f_d + f_i
 
-    ddphi = f[:,0,:].T/((a*np.sin(theta))**2) - 2*np.cos(theta)/np.sin(theta)*dtheta*dphi
-    ddtheta = (2*f[:,1,:].T + (a**2-b**2)*np.sin(2*theta)*dtheta**2 + a**2*np.sin(2*theta)*dphi**2) /\
-              (a**2 + b**2 + (a**2-b**2)*np.cos(2*theta))
+    ddphi = f[:,0,:].T/(m*(a*np.sin(theta))**2) - 2*np.cos(theta)/np.sin(theta)*dtheta*dphi
+    ddtheta = (2*f[:,1,:].T + m*(a**2-b**2)*np.sin(2*theta)*dtheta**2 + m*a**2*np.sin(2*theta)*dphi**2) / \
+              (m*(a**2 + b**2 + (a**2-b**2)*np.cos(2*theta)))
 
     dxdt = np.concatenate((dphi, dtheta, ddphi.flatten(), ddtheta.flatten()), axis=0)
+
+    # update progress bar
+    last_t, dt = state
+    ni = int((t - last_t) / dt)
+    pbar.update(ni)
+    state[0] = last_t + dt * ni
+
     return dxdt
 
 
@@ -82,8 +89,8 @@ def separate_all(x, para):
     n, a, b = [para[i] for i in ['n', 'a', 'b']]
     phi, theta, dphi, dtheta = [x[i*n:(i+1)*n] for i in range(4)]
 
-    p = para.copy()
-    p['f_r'] = lambda d: 1e-4/d**2
+    para_tmp = para.copy()
+    para_tmp['f_r'] = lambda d: 1e3*a**2/n/d**2
 
     N = 1000
     for i in range(N):
@@ -93,7 +100,7 @@ def separate_all(x, para):
                       [np.zeros(n), -b * np.sin(theta)]]).transpose((2, 0, 1))
 
         # take a separation step
-        s = repulsion(x, p, J)
+        s = repulsion(x, para_tmp, J)
         phi = (phi + s[:,0,:].T).flatten()
         theta = (theta + s[:,1,:].T).flatten()
         x = np.concatenate((phi, theta, dphi, dtheta), axis=0)
