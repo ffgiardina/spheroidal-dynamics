@@ -1,37 +1,36 @@
-import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 from subroutines import *
 from tqdm import tqdm
 
 # Parameters
 para = dict()
-n = 20  # number of bacteria
-a = 40e-6  # major axis a of ellipsoid
+n =  25  # number of bacteria
+a = 10e-6  # major axis a of ellipsoid
 b = a*0.95  # minor axis a of ellipsoid
 m = 1e-15  # mass of bacteria
-E = 3e5  # elastic modulus of bacteria
+E = 1e-11 * 3e5  # elastic modulus of bacteria
 r_b = 3e-6  # particle radius
 f_r = lambda d: np.sqrt(8/9*np.abs(d-2*r_b)**3*E**2*r_b)*(d-2*r_b<0)  # sphere-sphere Hertzian repulsion
 mu = 1e-3  # dynamic viscosity of water at room temperature
 v_b = 10e-6  # bacterial speed
 d = 6*np.pi*mu*r_b*v_b  # damping coefficient (Stoke's law)
 p = v_b*d  # propulsive force
+l_c = (9/8*p**2/(E**2*r_b))**(1/3)  # contact length scale
+tau_c = 0.1 * l_c/v_b  # contact time scale
 
 para['n'] = n; para['m'] = m; para['a'] = a; para['b'] = b; para['d'] = d; para['p'] = p
-para['r_b'] = r_b; para['f_r'] = f_r
+para['r_b'] = r_b; para['f_r'] = f_r; para['tau_c'] = tau_c
 
 # Initial conditions
 np.random.seed(2)
 phi0 = np.random.rand(n)*2*np.pi-np.pi
 theta0 = np.random.rand(n)*np.pi
-dphi0 = np.random.rand(n)-1/2
-dtheta0 = np.random.rand(n)-1/2
-x0 = np.concatenate((phi0, theta0, dphi0, dtheta0), axis=0)
-
+psi0 = np.random.rand(n)*2*np.pi  # polar orientation in local coordinates of tangent plane
+x0 = np.concatenate((phi0, theta0, psi0), axis=0)
 x0 = separate_all(x0, para)
 
 # Solve problem
-tend = 20  # final time
+tend = 2  # final time
 N = 1001  # number of solution time points
 t = np.linspace(0, tend, N)
 

@@ -12,6 +12,7 @@ def animate(save_video=False):
     # Animation parameters
     replay_speed = 10
     a = para.item()['a']; b = para.item()['b']; N = para.item()['N']; tend = para.item()['tend']
+    r_b = para.item()['r_b']
 
     # Animate results
     fig = plt.figure(1)
@@ -29,7 +30,7 @@ def animate(save_video=False):
     set_axes_equal(ax)
 
     # points and lines to be updated
-    points, = ax.plot(r[0, :, 0], r[0, :,  1], r[0, :,  2], marker="o", c='black', linestyle = 'None',)
+    points, = ax.plot(r[0, :, 0], r[0, :,  1], r[0, :,  2], marker="o", c='black', linestyle = 'None', markersize=10)
     line, = ax.plot(r[0, 1, 0], r[0, 1, 1], r[0, 1, 2], c='black', linewidth=1)
 
     # time
@@ -46,7 +47,7 @@ def animate(save_video=False):
         points.set_3d_properties(r0[:, 2],'z')
 
         # Rotate plot
-        ax.view_init(elev=90, azim=it/N*0*360)
+        ax.view_init(elev=20, azim=0 * it/N*360)
 
         line.set_data(r[0:it,0,0],r[0:it,0,1])
         line.set_3d_properties(r[0:it,0,2], 'z')

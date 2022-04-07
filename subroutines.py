@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 #  Equations of motion
 def dynamics(x, t, para, pbar, state):
     # unpack states and parameters
-    n, a, b, m, d, p = [para[i] for i in ['n', 'a', 'b', 'm', 'd', 'p']]
-    phi, theta, dphi, dtheta = [x[i*n:(i+1)*n] for i in range(4)]
+    n, a, b, d, p, tau_c = [para[i] for i in ['n', 'a', 'b', 'd', 'p', 'tau_c']]
+    phi, theta, psi = [x[i * n:(i + 1) * n] for i in range(3)]
 
 
     # Jacobian matrix
@@ -13,29 +13,35 @@ def dynamics(x, t, para, pbar, state):
                    [a * np.cos(phi) * np.sin(theta), a * np.cos(theta) * np.sin(phi)],
                    [np.zeros(n), -b * np.sin(theta)]]).transpose((2,0,1))
 
-    # metric tensor
-    g = np.array([[(a*np.sin(theta))**2, np.zeros(n)], [np.zeros(n), 1.0/2.0*(a**2+b**2+(a**2-b**2)*np.cos(2*theta))]]).transpose((2,0,1))
-    v = np.array([[dphi], [dtheta]]).transpose((2,0,1))  # velocity vector
-
-    # compute damping forces
-    f_d = -d*(g@v)
+    Jn0 = np.sqrt(a**2*np.sin(theta)**2)  # norm of first column vector in J
+    Jn1 = np.sqrt(1/2*(a**2 + b**2 + (a**2-b**2)*np.cos(2*theta)))  # norm of second column vector in J
 
     # compute propulsive forces
-    dr = J@v
-    dr_norm = np.sqrt(np.sum(dr*dr,axis=1)).repeat(2,axis=1).reshape((n,2,1))
-    f_p = p * (J.transpose((0,2,1))@dr)/(dr_norm+p*1e-10)
+    wphi = np.sin(psi) / Jn0
+    wtheta = np.cos(psi) / Jn1
+    v = J@np.array([[wphi], [wtheta]]).transpose((2,0,1))  # propulsive vector
+    v_norm = np.sqrt(np.sum(v*v,axis=1)).repeat(2,axis=1).reshape((n,2,1))
+    f_p = p * (J.transpose((0,2,1))@v)/v_norm
 
     # compute interaction forces
     f_i = repulsion(x, para, J)
 
+    # compute rotation of psi due to contact forces
+    f_i_on = 1*(np.sum(np.abs(f_i),axis=1)>0)  # check for collision
+    alpha = np.arctan2(f_i[:,0,:].flatten()*Jn0,f_i[:,1,:].flatten()*Jn1)  # collision force angle
+    mod_alpha = np.mod(alpha,2*np.pi)
+    mod_psi = np.mod(psi, 2 * np.pi)
+    da = mod_psi-mod_alpha
+    mod_psi = mod_psi + 2*np.pi*(da<-np.pi)
+    mod_alpha = mod_alpha + 2*np.pi*(da>np.pi)
+    dpsi_i = f_i_on.flatten() * (mod_alpha-mod_psi) / (tau_c * np.pi)  # angular speed due to collision
+
     # compute time derivatives
-    f = f_p + f_d + f_i
-
-    ddphi = f[:,0,:].T/(m*(a*np.sin(theta))**2) - 2*np.cos(theta)/np.sin(theta)*dtheta*dphi
-    ddtheta = (2*f[:,1,:].T + m*(a**2-b**2)*np.sin(2*theta)*dtheta**2 + m*a**2*np.sin(2*theta)*dphi**2) / \
-              (m*(a**2 + b**2 + (a**2-b**2)*np.cos(2*theta)))
-
-    dxdt = np.concatenate((dphi, dtheta, ddphi.flatten(), ddtheta.flatten()), axis=0)
+    f = f_p + f_i
+    dphi = f[:,0,:].T/(d*(a*np.sin(theta))**2)
+    dtheta = (2*f[:,1,:].T) / (d*(a**2 + b**2 + (a**2-b**2)*np.cos(2*theta)))
+    dpsi = -np.cos(theta)/np.sin(theta)*dphi*Jn0/Jn1 + dpsi_i
+    dxdt = np.concatenate((dphi.flatten(), dtheta.flatten(), dpsi.flatten()), axis=0)
 
     # update progress bar
     last_t, dt = state
@@ -87,7 +93,7 @@ def ellipsoid2cartesian(sol, para):
 # Maximally separate particles on given ellipsoid
 def separate_all(x, para):
     n, a, b = [para[i] for i in ['n', 'a', 'b']]
-    phi, theta, dphi, dtheta = [x[i*n:(i+1)*n] for i in range(4)]
+    phi, theta, psi = [x[i*n:(i+1)*n] for i in range(3)]
 
     para_tmp = para.copy()
     para_tmp['f_r'] = lambda d: 1e3*a**2/n/d**2
@@ -103,7 +109,7 @@ def separate_all(x, para):
         s = repulsion(x, para_tmp, J)
         phi = (phi + s[:,0,:].T).flatten()
         theta = (theta + s[:,1,:].T).flatten()
-        x = np.concatenate((phi, theta, dphi, dtheta), axis=0)
+        x = np.concatenate((phi, theta, psi), axis=0)
 
     return x
 
