@@ -135,3 +135,16 @@ def _set_axes_radius(ax, origin, radius):
     ax.set_xlim3d([x - radius, x + radius])
     ax.set_ylim3d([y - radius, y + radius])
     ax.set_zlim3d([z - radius, z + radius])
+
+# compute particle shape on sphere for animation
+# ne is the number of vertices that form the particle outline
+def create_ellipse(r, q ,ne, para):
+    a, b, r_b, n = [para.item()[i] for i in ['a', 'b', 'r_b', 'n']]
+    phi, theta, psi = [q[i] for i in range(3)]
+    J1 = np.array([[-a * np.sin(theta) * np.sin(phi)], [a * np.cos(phi) * np.sin(theta)], [0*theta]])/np.sqrt(a**2*np.sin(theta)**2)  # norm of first column vector in J
+    J2 = np.array([[ a * np.cos(theta) * np.cos(phi)], [a * np.cos(theta) * np.sin(phi)], [-b * np.sin(theta)]])/np.sqrt(1/2*(a**2 + b**2 + (a**2-b**2)*np.cos(2*theta)))  # norm of second column vector in J
+
+    s = np.linspace(2*np.pi, 0, ne)
+    poly = r + (r_b*(J2*np.cos(s) + J1*np.sin(s))).T
+
+    return poly

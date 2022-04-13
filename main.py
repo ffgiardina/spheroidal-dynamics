@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 # Parameters
 para = dict()
-n =  25  # number of bacteria
+n =  10  # number of bacteria
 a = 10e-6  # major axis a of ellipsoid
 b = a*0.95  # minor axis a of ellipsoid
 m = 1e-15  # mass of bacteria
@@ -30,7 +30,7 @@ x0 = np.concatenate((phi0, theta0, psi0), axis=0)
 x0 = separate_all(x0, para)
 
 # Solve problem
-tend = 2  # final time
+tend = 10  # final time
 N = 1001  # number of solution time points
 t = np.linspace(0, tend, N)
 
@@ -44,7 +44,7 @@ r = ellipsoid2cartesian(sol, para)
 
 # Save results
 para_tmp = para.copy(); del para_tmp['f_r']; para_tmp['N'] = N; para_tmp['tend'] = tend
-np.savez('results.npz', trajectories=r, parameters=para_tmp)
+np.savez('results.npz', solution=sol, trajectories=r, parameters=para_tmp)
 
 # Compute total spin of system along z-axis
 drdt = (r[1:,:,:] - r[:-1,:,:])/(tend/N)  # velocity vectors
