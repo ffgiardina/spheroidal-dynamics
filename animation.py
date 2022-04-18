@@ -28,10 +28,11 @@ def animate(save_video=False):
     y = a*np.sin(u)*np.sin(v)
     z = b*np.cos(v)
 
-    us, vs = np.mgrid[-a:a:10j, -a:a:10j]
-    us = a*np.cos(u)*np.sin(v); vs = a*np.sin(u)*np.sin(v)
+    ax.plot_surface(x, y, z, cmap=cm.gist_earth, alpha=0.5, cstride=1, rstride=1, linewidth=0, antialiased=True,
+                    zorder=1)
 
-    ax.plot_surface(x, y, z, cmap=cm.gist_earth, alpha=0.5, cstride=1, rstride=1, linewidth=0, antialiased=True, zorder=1)
+    # ground plane
+    us = a*np.cos(u)*np.sin(v); vs = a*np.sin(u)*np.sin(v)
     ax.plot_surface(us, vs, -a*np.ones(us.shape), cmap=cm.bone, alpha=0.1, cstride=1, rstride=1, linewidth=0, antialiased=True,zorder=0)
 
     ax.set_box_aspect([1, 1, 1])
@@ -70,8 +71,8 @@ def animate(save_video=False):
         # Rotate plot
         ax.view_init(elev=20, azim=1 * it/N*360)
 
-        # line.set_data(r[0:it,0,0],r[0:it,0,1])
-        # line.set_3d_properties(r[0:it,0,2], 'z')
+        line.set_data(r[0:it,0,0],r[0:it,0,1])
+        line.set_3d_properties(r[0:it,0,2], 'z')
 
         time.set_text('t=' + str(np.round(tend*it/N,1)) + 's')
 

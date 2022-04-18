@@ -4,42 +4,43 @@ from tqdm import tqdm
 
 # Parameters
 para = dict()
-n =  10  # number of bacteria
-a = 10e-6  # major axis a of ellipsoid
-b = a*0.95  # minor axis a of ellipsoid
-m = 1e-15  # mass of bacteria
-E = 1e-11 * 3e5  # elastic modulus of bacteria
+n = 20  # number of particles
+a = 100e-6  # major axes a of spheroid
+b = a*0.7  # minor axis a of spheroid
+m = 1e-15  # mass of particle
+E = 1e-11 * 3e5  # elastic modulus (for particle collisions)
 r_b = 3e-6  # particle radius
 f_r = lambda d: np.sqrt(8/9*np.abs(d-2*r_b)**3*E**2*r_b)*(d-2*r_b<0)  # sphere-sphere Hertzian repulsion
 mu = 1e-3  # dynamic viscosity of water at room temperature
-v_b = 10e-6  # bacterial speed
+v_b = 10e-6  # particle speed
 d = 6*np.pi*mu*r_b*v_b  # damping coefficient (Stoke's law)
 p = v_b*d  # propulsive force
 l_c = (9/8*p**2/(E**2*r_b))**(1/3)  # contact length scale
 tau_c = 0.1 * l_c/v_b  # contact time scale
 
+# pack up all parameters
 para['n'] = n; para['m'] = m; para['a'] = a; para['b'] = b; para['d'] = d; para['p'] = p
 para['r_b'] = r_b; para['f_r'] = f_r; para['tau_c'] = tau_c
 
 # Initial conditions
-np.random.seed(2)
+np.random.seed(3)
 phi0 = np.random.rand(n)*2*np.pi-np.pi
 theta0 = np.random.rand(n)*np.pi
 psi0 = np.random.rand(n)*2*np.pi  # polar orientation in local coordinates of tangent plane
 x0 = np.concatenate((phi0, theta0, psi0), axis=0)
-x0 = separate_all(x0, para)
+x0 = separate_all(x0, para)  # separate particles to avoid overlaps
 
 # Solve problem
-tend = 10  # final time
+tend = 20  # final time
 N = 1001  # number of solution time points
 t = np.linspace(0, tend, N)
 
-s_e = 4*np.pi*(((a*a)**1.6 + 2*(a*b)**1.6)/3)**(1/1.6)
-print(f'Running simulation at packing fraction {np.round(n*r_b**2*np.pi/s_e,2)}')
+s_e = 4*np.pi*(((a*a)**1.6 + 2*(a*b)**1.6)/3)**(1/1.6)  # spheroid surface area
+print(f'Running simulation at packing fraction {np.round(n*r_b**2*np.pi/s_e,2)}')  # display packing fraction
 with tqdm(total=100, unit="‰") as pbar:
     sol = odeint(dynamics, x0, t, args=(para, pbar, [0, tend/100]))
 
-# Convert solution to cartesian coordinates
+# Convert solution to Cartesian coordinates
 r = ellipsoid2cartesian(sol, para)
 
 # Save results

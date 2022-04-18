@@ -17,8 +17,8 @@ def dynamics(x, t, para, pbar, state):
     Jn1 = np.sqrt(1/2*(a**2 + b**2 + (a**2-b**2)*np.cos(2*theta)))  # norm of second column vector in J
 
     # compute propulsive forces
-    wphi = np.sin(psi) / Jn0
-    wtheta = np.cos(psi) / Jn1
+    wphi = np.sin(psi) / Jn0  # polar particle orientation. Component of local coordinate vector y on manifold
+    wtheta = np.cos(psi) / Jn1  # polar particle orientation. Component of local coordinate vector x on manifold
     v = J@np.array([[wphi], [wtheta]]).transpose((2,0,1))  # propulsive vector
     v_norm = np.sqrt(np.sum(v*v,axis=1)).repeat(2,axis=1).reshape((n,2,1))
     f_p = p * (J.transpose((0,2,1))@v)/v_norm
@@ -36,7 +36,7 @@ def dynamics(x, t, para, pbar, state):
     mod_alpha = mod_alpha + 2*np.pi*(da>np.pi)
     dpsi_i = f_i_on.flatten() * (mod_alpha-mod_psi) / (tau_c * np.pi)  # angular speed due to collision
 
-    # compute time derivatives
+    # compute right-hand side of dynamical system
     f = f_p + f_i
     dphi = f[:,0,:].T/(d*(a*np.sin(theta))**2)
     dtheta = (2*f[:,1,:].T) / (d*(a**2 + b**2 + (a**2-b**2)*np.cos(2*theta)))
@@ -90,7 +90,7 @@ def ellipsoid2cartesian(sol, para):
     return r
 
 
-# Maximally separate particles on given ellipsoid
+# Separate particles on given ellipsoid
 def separate_all(x, para):
     n, a, b = [para[i] for i in ['n', 'a', 'b']]
     phi, theta, psi = [x[i*n:(i+1)*n] for i in range(3)]
@@ -112,6 +112,19 @@ def separate_all(x, para):
         x = np.concatenate((phi, theta, psi), axis=0)
 
     return x
+
+# compute particle shape on sphere for animation
+# ne is the number of vertices that form the particle outline
+def create_ellipse(r, q ,ne, para):
+    a, b, r_b, n = [para.item()[i] for i in ['a', 'b', 'r_b', 'n']]
+    phi, theta, psi = [q[i] for i in range(3)]
+    J1 = np.array([[-a * np.sin(theta) * np.sin(phi)], [a * np.cos(phi) * np.sin(theta)], [0*theta]])/np.sqrt(a**2*np.sin(theta)**2)  # norm of first column vector in J
+    J2 = np.array([[ a * np.cos(theta) * np.cos(phi)], [a * np.cos(theta) * np.sin(phi)], [-b * np.sin(theta)]])/np.sqrt(1/2*(a**2 + b**2 + (a**2-b**2)*np.cos(2*theta)))  # norm of second column vector in J
+
+    s = np.linspace(2*np.pi, 0, ne)
+    poly = r + (r_b*(J2*np.cos(s) + J1*np.sin(s))).T
+
+    return poly
 
 # Functions from @Mateen Ulhaq and @karlo
 def set_axes_equal(ax: plt.Axes):
@@ -135,16 +148,3 @@ def _set_axes_radius(ax, origin, radius):
     ax.set_xlim3d([x - radius, x + radius])
     ax.set_ylim3d([y - radius, y + radius])
     ax.set_zlim3d([z - radius, z + radius])
-
-# compute particle shape on sphere for animation
-# ne is the number of vertices that form the particle outline
-def create_ellipse(r, q ,ne, para):
-    a, b, r_b, n = [para.item()[i] for i in ['a', 'b', 'r_b', 'n']]
-    phi, theta, psi = [q[i] for i in range(3)]
-    J1 = np.array([[-a * np.sin(theta) * np.sin(phi)], [a * np.cos(phi) * np.sin(theta)], [0*theta]])/np.sqrt(a**2*np.sin(theta)**2)  # norm of first column vector in J
-    J2 = np.array([[ a * np.cos(theta) * np.cos(phi)], [a * np.cos(theta) * np.sin(phi)], [-b * np.sin(theta)]])/np.sqrt(1/2*(a**2 + b**2 + (a**2-b**2)*np.cos(2*theta)))  # norm of second column vector in J
-
-    s = np.linspace(2*np.pi, 0, ne)
-    poly = r + (r_b*(J2*np.cos(s) + J1*np.sin(s))).T
-
-    return poly
