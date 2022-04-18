@@ -3,7 +3,9 @@ A python code that solves dynamical problems of interacting polar particles on s
 
 Non-interacting particles follow geodesics and interactions are modeled as repulsive contacts. 
 
-![](animation/dyn_anim.mp4)
+<p align="center">
+  <img src="animation/dyn_anim.gif" alt="animated" />
+</p>
 
 The spheroid has two major axes with length *a* and a minor axis with length *b*. Particles are described with three parameters 
 

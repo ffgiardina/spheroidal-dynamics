@@ -4,9 +4,9 @@ from tqdm import tqdm
 
 # Parameters
 para = dict()
-n = 20  # number of particles
+n = 200  # number of particles
 a = 100e-6  # major axes a of spheroid
-b = a*0.7  # minor axis a of spheroid
+b = a*0.95  # minor axis a of spheroid
 m = 1e-15  # mass of particle
 E = 1e-11 * 3e5  # elastic modulus (for particle collisions)
 r_b = 3e-6  # particle radius
