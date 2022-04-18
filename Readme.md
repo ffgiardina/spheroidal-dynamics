@@ -23,15 +23,15 @@ where the first two are the pseudo-spherical coordinates of the particle on the 
 with
 
 <p align="center">
-<img src="https://render.githubusercontent.com/render/math?math=r = \sin(\eta) = \frac{a \sin \theta}{\sqrt{a^2 \sin^2\theta+b^2\cos^2\theta}},">
+<img src="https://render.githubusercontent.com/render/math?math=\sin(\eta) = \frac{a \sin \theta}{\sqrt{a^2 \sin^2\theta+b^2\cos^2\theta}},">
 </p>
 
 <p align="center">
-<img src="https://render.githubusercontent.com/render/math?math=r = \cos(\eta) = \frac{b \cos \theta}{\sqrt{a^2 \sin^2\theta+b^2\cos^2\theta}},">
+<img src="https://render.githubusercontent.com/render/math?math=\cos(\eta) = \frac{b \cos \theta}{\sqrt{a^2 \sin^2\theta+b^2\cos^2\theta}},">
 </p>
 
 and
 
 <p align="center">
-<img src="https://render.githubusercontent.com/render/math?math=r = L(\eta) = \frac{ab}{\sqrt{a^2 \cos^2\eta+b^2\sin^2\eta}}.">
+<img src="https://render.githubusercontent.com/render/math?math=L(\eta) = \frac{ab}{\sqrt{a^2 \cos^2\eta+b^2\sin^2\eta}}.">
 </p>
