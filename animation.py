@@ -7,13 +7,13 @@ def animate(save_video=False):
     # Load data
     data = np.load('results.npz', allow_pickle=True)
     r = data['trajectories']
-    para = data['parameters']
+    para_loaded = data['parameters']
     sol = data['solution']
 
     # Animation parameters
     replay_speed = 10
-    a = para.item()['a']; b = para.item()['b']; N = para.item()['N']; tend = para.item()['tend']
-    r_b = para.item()['r_b']; n = para.item()['n']
+    para = para_loaded.item()
+    a, b, N, tend, l_a, r_b, n = [para[k] for k in ['a', 'b', 'N', 'tend', 'l_a', 'l_b', 'n']]
 
     phi, theta, psi = [sol[:, i * n:(i + 1) * n] for i in range(3)]
 
@@ -48,7 +48,7 @@ def animate(save_video=False):
     particles = []
     for i in range(n):
         q = [phi[0, i], theta[0, i], psi[0, i]]
-        pts = create_ellipse(r[0,i,:], q, ne, para)
+        pts = particle_boundary(r[0,i,:], q, ne, para)
         particles.append(ax.plot(pts[:,0], pts[:,1], pts[:,2], c='black', linewidth=1))
 
     # time
@@ -64,12 +64,12 @@ def animate(save_video=False):
         # update particle coordinates
         for i in range(n):
             q = [phi[it,i], theta[it,i], psi[it,i]]
-            pts = create_ellipse(r0[i,:], q, ne, para)
+            pts = particle_boundary(r0[i, :], q, 20, para)
             particles[i][0].set_data(pts[:,0], pts[:,1])
             particles[i][0].set_3d_properties(pts[:,2], 'z')
 
         # Rotate plot
-        ax.view_init(elev=20, azim=1 * it/N*360)
+        ax.view_init(elev=20, azim= 0.25 * it/N*360)
 
         line.set_data(r[0:it,0,0],r[0:it,0,1])
         line.set_3d_properties(r[0:it,0,2], 'z')

@@ -3,3 +3,6 @@ __pycache__
 results.npz
 animation.mp4
 dynamics.mp4
+Playground.py
+min_distance.py
+unit_test.py
